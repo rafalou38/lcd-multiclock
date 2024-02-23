@@ -2,6 +2,8 @@
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
 
+#include "chars.h"
+
 #define BTN_MODE 12
 #define BTN_PLAY 11
 #define BTN_STOP 10
@@ -14,6 +16,14 @@ LiquidCrystal_I2C lcd(0x27, 16, 2);
 void setup()
 {
   lcd.init();
+  lcd.createChar(0, bar_full);
+  lcd.createChar(1, bar_1);
+  lcd.createChar(2, bar_2);
+  lcd.createChar(3, bar_3);
+  lcd.createChar(4, bar_4);
+  lcd.createChar(5, bar_5);
+  lcd.createChar(6, bar_open);
+  lcd.createChar(7, bar_close);
 
   Serial.begin(9600);
 
@@ -122,6 +132,7 @@ void chrono()
     text = "CHRONO";
     lcd.setCursor(fit(text), 1);
     lcd.print(text);
+    displayTime(0);
     if (play_released)
     {
       lcd.clear();
@@ -131,7 +142,7 @@ void chrono()
     break;
 
   case running:
-    text = "[------]";
+    text = "(-_-)";
     lcd.setCursor(fit(text), 1);
     lcd.print(text);
     displayTime(millis() - chronoStart);
@@ -147,7 +158,7 @@ void chrono()
     break;
 
   case paused:
-    text = "PAUSE";
+    text = "(o_o)";
     lcd.setCursor(fit(text), 1);
     lcd.print(text);
 
@@ -213,26 +224,42 @@ void minuteur()
       lcd.clear();
       displayTime(0);
       minuteurState = stopped;
+      return;
     }
     else
     {
       displayTime(minuteurTotal - (millis() - minuteurStart));
     }
-
+    
     progressBar = "";
     lcd.setCursor(0, 1);
-    progressBar += ("[");
+    lcd.write(byte(6));
     float ratio = (millis() - minuteurStart) / (float)minuteurTotal;
     for (size_t i = 0; i < floor(ratio * 14); i++)
     {
-      progressBar += ("#");
+      lcd.write(byte(0));
     }
-    for (size_t i = 0; i < ceil((1 - ratio) * 14); i++)
+
+    float remaining = ratio * 14 - floor(ratio * 14);
+    // Serial.println(remaining);
+    // if (remaining < 0.25 / 5.0f)
+    //   lcd.print(" ");
+    if (remaining < 1 / 5.0f)
+      lcd.write(byte(1));
+    else if (remaining < 2 / 5.0f)
+      lcd.write(byte(2));
+    else if (remaining < 3 / 5.0f)
+      lcd.write(byte(3));
+    else if (remaining < 4 / 5.0f)
+      lcd.write(byte(4));
+    else if (remaining < 5 / 5.0f)
+      lcd.write(byte(5));
+
+    for (size_t i = 0; i < floor((1 - ratio) * 14); i++)
     {
-      progressBar += (" ");
+      lcd.print(" ");
     }
-    progressBar += ("]");
-    lcd.print(progressBar);
+    lcd.write(byte(7));
 
     break;
 
